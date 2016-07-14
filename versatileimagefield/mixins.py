@@ -56,6 +56,7 @@ class VersatileImageMixIn(object):
             self.ppoi = (0.5, 0.5)
         if self.name:
             filename, ext = os.path.splitext(self.name)
+            _, filename = os.path.split(filename)
             self.filter_regex = re.compile(
                 "{filename}{filter_regex_snippet}{ext}".format(
                     filename=filename,
@@ -178,20 +179,25 @@ class VersatileImageMixIn(object):
         Deletes files from `root_folder` on self.storage that match
         `regex`.
         """
-        directory_list, file_list = self.storage.listdir(root_folder)
-        for f in file_list:
-            if regex.match(f) is not None:
-                file_location = os.path.join(root_folder, f)
-                self.storage.delete(file_location)
-                cache.delete(
-                    self.storage.url(file_location)
-                )
-                print(
-                    "Deleted {file} (created from: {original})".format(
-                        file=os.path.join(root_folder, f),
-                        original=self.name
+        try:
+            directory_list, file_list = self.storage.listdir(root_folder)
+        except FileNotFoundError:
+            # This will happen if asked to delete images in a folder that was never created.
+            pass
+        else:
+            for f in file_list:
+                if regex.match(f) is not None:
+                    file_location = os.path.join(root_folder, f)
+                    self.storage.delete(file_location)
+                    cache.delete(
+                        self.storage.url(file_location)
                     )
-                )
+                    print(
+                        "Deleted {file} (created from: {original})".format(
+                            file=os.path.join(root_folder, f),
+                            original=self.name
+                        )
+                    )
 
     def delete_filtered_images(self):
         """
